@@ -7,6 +7,7 @@ import {
   ultimateForCharacter,
 } from "./content";
 import { affinity, affinityMultiplier } from "./affinity";
+import { playSfx } from "./audio";
 import type {
   CardInstance,
   Character,
@@ -399,6 +400,7 @@ export const useGame = create<GameState>((set, get) => ({
     const def = CARD_DEF_BY_ID[card.defId];
     const queue = [...s.queue, { cardUid, casterId: def.characterId, targetEnemyId: s.enemy.id }];
     const slotIndex = queue.length;
+    playSfx("slot");
     set({
       queue,
       selectedCardUid: null,
@@ -499,6 +501,7 @@ export const useGame = create<GameState>((set, get) => ({
 
       const owner = characters.find((c) => c.id === def.characterId);
       if (owner && owner.moxie < owner.maxMoxie) owner.moxie += 1;
+      playSfx("fuse");
       log = logLine(
         log,
         `Fusión manual — ${def.name} sube a Lv${fusedCard.level}. ${
@@ -572,6 +575,15 @@ export const useGame = create<GameState>((set, get) => ({
         : def.type === "Physical"
         ? "attack-physical"
         : "attack-logical"; // Logical + all support cards use the cast gesture
+
+      // cast SFX per card type
+      if (def.ultimate) playSfx("ultimate");
+      else if (def.type === "Physical") playSfx("physical");
+      else if (def.type === "Heal") playSfx("heal");
+      else if (def.type === "Buff") playSfx("buff");
+      else if (def.type === "Debuff") playSfx("debuff");
+      else playSfx("logical");
+
       set({
         characters: clone(characters),
         activeAnim: caster.id,
@@ -644,6 +656,8 @@ export const useGame = create<GameState>((set, get) => ({
         // Floating damage number + running total over the enemy.
         addFloater({ targetId: enemy.id, amount: damage, kind: crit ? "crit" : "damage" });
         set({ totalDamage: get().totalDamage + damage });
+        // impact SFX slightly after the cast so it lands with the hit
+        setTimeout(() => playSfx("enemyHit"), 120);
 
         log = logLine(
           log,
@@ -692,6 +706,7 @@ export const useGame = create<GameState>((set, get) => ({
     set({ hand, queue: [] });
 
     if (!enemy.alive) {
+      playSfx("victory");
       set({
         phase: "victory",
         log: logLine(log, "El modelo clásico ha sido superado por la ventaja cuántica. VICTORIA.", "system"),
@@ -768,6 +783,7 @@ export const useGame = create<GameState>((set, get) => ({
         );
         applyDamageToCharacter(target, dmg);
         addFloater({ targetId: target.id, amount: dmg, kind: "enemy-damage" });
+        playSfx("allyHit");
         const enemyNoise = intent.noise ?? 3;
         noise = noise + enemyNoise;
         log = logLine(
@@ -810,6 +826,7 @@ export const useGame = create<GameState>((set, get) => ({
     await wait(500);
 
     if (!anyAlive) {
+      playSfx("defeat");
       set({ phase: "defeat", log: logLine(get().log, "Todo el equipo ha decoherido. DERROTA.", "system") });
       return;
     }

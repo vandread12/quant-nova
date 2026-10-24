@@ -9,6 +9,7 @@ import { CommandBar } from "./CommandBar";
 import { CombatLog } from "./CombatLog";
 import { ResultOverlay } from "./ResultOverlay";
 import { AffinityLegend } from "./AffinityLegend";
+import { AudioControls } from "./AudioControls";
 
 export function BattleScreen() {
   const init = useGame((s) => s.init);
@@ -29,6 +30,11 @@ export function BattleScreen() {
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden">
       <TopHud />
+
+      {/* Audio mute toggle (music starts on first interaction) */}
+      <div className="absolute right-3 top-3 z-40">
+        <AudioControls />
+      </div>
 
       {/* Battlefield fills the upper area */}
       <Battlefield />
